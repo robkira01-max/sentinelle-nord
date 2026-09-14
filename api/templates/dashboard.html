@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinelle Nord Canada</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#08090f; --sidebar:#0d1018; --card:#111520;
+  --border:#1a2035; --accent:#4a9eff; --accent2:#00d4aa;
+  --red:#e53935; --orange:#ff6b35; --yellow:#ffb300;
+  --green:#43a047; --purple:#9c27b0;
+  --text:#ccd6f6; --muted:#4a5580; --bright:#e8f0ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── Topbar ── */
+#topbar{background:var(--sidebar);border-bottom:1px solid var(--border);padding:.6rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100}
+#topbar .brand{color:var(--accent);font-size:1.05rem;font-weight:700;letter-spacing:.03em}
+#topbar .brand span{color:var(--accent2)}
+#status-bar{display:flex;gap:1.2rem;font-size:.78rem;color:var(--muted)}
+#status-bar .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.3rem}
+.dot.green{background:var(--green)} .dot.red{background:var(--red)} .dot.yellow{background:var(--yellow)}
+
+/* ── Layout ── */
+#layout{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+#sidebar{width:200px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.nav-group{padding:.6rem 0}
+.nav-group-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:.4rem 1rem .2rem}
+.nav-item{display:flex;align-items:center;gap:.5rem;padding:.45rem 1rem;cursor:pointer;color:var(--muted);font-size:.82rem;border-left:3px solid transparent;transition:.15s}
+.nav-item:hover{color:var(--text);background:rgba(74,158,255,.05)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(74,158,255,.08)}
+.nav-item .icon{font-size:.9rem;width:18px;text-align:center}
+
+/* ── Main ── */
+#main{flex:1;overflow-y:auto;padding:1.2rem}
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── Cards ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.2rem}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.9rem;text-align:center}
+.stat-card .num{font-size:1.9rem;font-weight:700;line-height:1.1}
+.stat-card .lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem;letter-spacing:.06em}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:.9rem;overflow:hidden}
+.card-header{padding:.7rem 1rem;border-bottom:1px solid var(--border);font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:flex;justify-content:space-between;align-items:center}
+.card-header .badge{background:var(--border);color:var(--text);padding:.1rem .4rem;border-radius:4px;font-size:.72rem}
+.card-body{padding:.9rem 1rem}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem}
+
+/* ── Scan form ── */
+.scan-form{display:flex;gap:.6rem;margin-bottom:1rem}
+.scan-form input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:.55rem .8rem;font-size:.88rem}
+.scan-form input:focus{outline:none;border-color:var(--accent)}
+.btn{padding:.5rem 1.1rem;border-radius:6px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-sm{padding:.3rem .7rem;font-size:.75rem}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── Tables ── */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{color:var(--muted);font-weight:500;padding:.5rem .7rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{padding:.45rem .7rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:.15rem .45rem;border-radius:4px;font-size:.7rem;font-weight:700}
+.b-critical{background:#3a1010;color:var(--red)}
+.b-high    {background:#3a2000;color:var(--orange)}
+.b-medium  {background:#2a2200;color:var(--yellow)}
+.b-low     {background:#0d2a0d;color:var(--green)}
+.b-done    {background:#0d2a0d;color:var(--green)}
+.b-running {background:#3a2e00;color:var(--yellow)}
+.b-failed  {background:#3a1010;color:var(--red)}
+.b-info    {background:#0d1a30;color:var(--accent)}
+.b-true    {background:#0d2a0d;color:var(--green)}
+.b-false   {background:#3a1010;color:var(--red)}
+
+/* ── Pre / JSON ── */
+pre{background:#06080e;border:1px solid var(--border);border-radius:6px;padding:.8rem;font-size:.76rem;max-height:360px;overflow:auto;color:#8fa8d0;line-height:1.5}
+
+/* ── Arctic cards ── */
+.arctic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem;margin-bottom:1rem}
+.arctic-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.9rem;cursor:pointer;transition:.15s}
+.arctic-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.arctic-card .title{font-size:.82rem;color:var(--bright);margin-bottom:.3rem}
+.arctic-card .sub{font-size:.72rem;color:var(--muted)}
+.arctic-card .icon{font-size:1.6rem;margin-bottom:.5rem}
+
+/* ── Map iframe ── */
+#map-frame{width:100%;height:calc(100vh - 200px);border:none;border-radius:8px;border:1px solid var(--border)}
+
+/* ── Satellite tiles ── */
+.sat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.8rem}
+.sat-product{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.8rem}
+.sat-product .name{font-size:.78rem;color:var(--text);word-break:break-all;margin-bottom:.4rem}
+.sat-meta{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem}
+
+/* ── Weather stations ── */
+.wx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem}
+.wx-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.9rem}
+.wx-card .station{font-size:.9rem;font-weight:600;color:var(--bright)}
+.wx-card .metar{font-size:.72rem;color:var(--accent2);margin-top:.4rem;font-family:monospace;word-break:break-all}
+
+/* ── Infra tree ── */
+.infra-cat{margin-bottom:.8rem}
+.infra-cat-title{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)}
+.infra-item{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem;margin-bottom:.4rem;font-size:.8rem;display:flex;justify-content:space-between;align-items:center}
+.infra-item .name{color:var(--bright)}
+.infra-item .operator{color:var(--muted);font-size:.72rem}
+.vuln-tag{background:#3a1010;color:var(--red);padding:.1rem .35rem;border-radius:4px;font-size:.68rem}
+
+/* ── Spinner ── */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;align-items:center;gap:.6rem;color:var(--muted);font-size:.82rem;padding:1.5rem}
+
+/* ── Section title ── */
+.section-title{font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.section-title .accent{color:var(--accent)}
+
+/* ── Alert banner ── */
+.alert{padding:.6rem 1rem;border-radius:6px;font-size:.8rem;margin-bottom:.8rem}
+.alert-warn{background:#3a2000;border:1px solid #5a3800;color:var(--orange)}
+.alert-ok{background:#0d2a0d;border:1px solid #1a4a1a;color:var(--green)}
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<div id="topbar">
+  <div class="brand">🛡️ Sentinelle <span>Nord Canada</span></div>
+  <div id="status-bar">
+    <span><span class="dot green" id="dot-api"></span>API</span>
+    <span><span class="dot" id="dot-db"></span>DB</span>
+    <span><span class="dot" id="dot-arctic"></span>Arctic</span>
+    <span id="clock" style="color:var(--text)"></span>
+  </div>
+</div>
+
+<!-- ── Layout ── -->
+<div id="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav id="sidebar">
+    <div class="nav-group">
+      <div class="nav-group-label">Plateforme</div>
+      <div class="nav-item active" onclick="show('dashboard')"><span class="icon">📊</span>Dashboard</div>
+      <div class="nav-item" onclick="show('scan')"><span class="icon">🔍</span>Scan OSINT</div>
+      <div class="nav-item" onclick="show('rapports')"><span class="icon">📋</span>Rapports</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Arctique</div>
+      <div class="nav-item" onclick="show('carte')"><span class="icon">🌍</span>Carte</div>
+      <div class="nav-item" onclick="show('ais')"><span class="icon">🚢</span>AIS Maritime</div>
+      <div class="nav-item" onclick="show('adsb')"><span class="icon">✈️</span>ADS-B Aérien</div>
+      <div class="nav-item" onclick="show('satellite')"><span class="icon">🛰️</span>Satellites</div>
+      <div class="nav-item" onclick="show('meteo')"><span class="icon">🌨️</span>Météo</div>
+      <div class="nav-item" onclick="show('infrastructure')"><span class="icon">⚡</span>Infrastructure</div>
+      <div class="nav-item" onclick="show('glace')"><span class="icon">🧊</span>Glace marine</div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main id="main">
+
+    <!-- ════ DASHBOARD ════ -->
+    <div id="panel-dashboard" class="panel active">
+      <div class="section-title">📊 Dashboard <span class="accent">Sentinelle Nord Canada</span></div>
+
+      <div id="db-stats" class="stat-grid">
+        <div class="stat-card"><div class="num" style="color:var(--accent)" id="s-scans">—</div><div class="lbl">Scans</div></div>
+        <div class="stat-card"><div class="num" style="color:var(--green)" id="s-targets">—</div><div class="lbl">Cibles</div></div>
+        <div class="stat-card"><div class="num" style="color:var(--red)" id="s-crit">—</div><div class="lbl">CRITICAL</div></div>
+        <div class="stat-card"><div class="num" style="color:var(--yellow)" id="s-high">—</div><div class="lbl">HIGH</div></div>
+        <div class="stat-card"><div class="num" style="color:var(--orange)" id="s-flights">—</div><div class="lbl">Vols Arctic</div></div>
+        <div class="stat-card"><div class="num" style="color:var(--accent2)" id="s-vessels">—</div><div class="lbl">Vessels AIS</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">Derniers scans</div>
+          <div class="card-body" style="padding:0">
+            <table id="tbl-scans"><thead><tr><th>Cible</th><th>Type</th><th>Statut</th><th>Date</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Accès rapide Arctic</div>
+          <div class="card-body">
+            <div class="arctic-grid" style="grid-template-columns:1fr 1fr">
+              <div class="arctic-card" onclick="show('ais')"><div class="icon">🚢</div><div class="title">AIS Maritime</div><div class="sub">Passage du Nord-Ouest</div></div>
+              <div class="arctic-card" onclick="show('adsb')"><div class="icon">✈️</div><div class="title">ADS-B Aérien</div><div class="sub">OpenSky Network</div></div>
+              <div class="arctic-card" onclick="show('satellite')"><div class="icon">🛰️</div><div class="title">Satellites</div><div class="sub">Copernicus S1/S2/S3</div></div>
+              <div class="arctic-card" onclick="show('meteo')"><div class="icon">🌨️</div><div class="title">Météo</div><div class="sub">MSC DataMart ECCC</div></div>
+              <div class="arctic-card" onclick="show('infrastructure')"><div class="icon">⚡</div><div class="title">Infrastructures</div><div class="sub">Critiques nordiques</div></div>
+              <div class="arctic-card" onclick="show('carte')"><div class="icon">🗺️</div><div class="title">Carte interactive</div><div class="sub">Zones sensibles</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SCAN ════ -->
+    <div id="panel-scan" class="panel">
+      <div class="section-title">🔍 Scan <span class="accent">OSINT/TI</span></div>
+      <div class="scan-form">
+        <input id="scan-input" placeholder="canada.ca  /  203.0.113.1  /  https://example.com" autocomplete="off">
+        <button class="btn btn-primary" onclick="doScan()">▶ Scanner</button>
+      </div>
+      <div id="scan-status"></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">Résultat brut JSON</div>
+          <div class="card-body" style="padding:0"><pre id="scan-output">—</pre></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Résumé</div>
+          <div class="card-body" id="scan-summary">Lancez un scan pour voir le résumé.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ RAPPORTS ════ -->
+    <div id="panel-rapports" class="panel">
+      <div class="section-title">📋 <span class="accent">Historique des scans</span></div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <table id="tbl-reports">
+            <thead><tr><th>ID</th><th>Cible</th><th>Type</th><th>Statut</th><th>Hash</th><th>Démarré</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CARTE ════ -->
+    <div id="panel-carte" class="panel">
+      <div class="section-title">🗺️ Carte <span class="accent">Arctique interactive</span></div>
+      <div id="map-container">
+        <div class="loading"><div class="spinner"></div>Chargement de la carte Folium…</div>
+      </div>
+    </div>
+
+    <!-- ════ AIS ════ -->
+    <div id="panel-ais" class="panel">
+      <div class="section-title">🚢 AIS <span class="accent">Trafic maritime polaire</span></div>
+      <div class="alert alert-warn">ℹ️ Données live nécessitent <strong>AISHUB_API_KEY</strong> dans .env — sans clé, mode fallback.</div>
+      <div id="ais-content"><div class="loading"><div class="spinner"></div>Chargement AIS…</div></div>
+    </div>
+
+    <!-- ════ ADS-B ════ -->
+    <div id="panel-adsb" class="panel">
+      <div class="section-title">✈️ ADS-B <span class="accent">Trafic aérien polaire</span></div>
+      <div class="alert alert-ok">✅ Source : <strong>OpenSky Network</strong> (EU, libre, sans inscription)</div>
+      <div id="adsb-content"><div class="loading"><div class="spinner"></div>Chargement ADS-B…</div></div>
+    </div>
+
+    <!-- ════ SATELLITE ════ -->
+    <div id="panel-satellite" class="panel">
+      <div class="section-title">🛰️ Satellites <span class="accent">Copernicus (EU)</span></div>
+      <div class="alert alert-ok">✅ Source : <strong>Copernicus Data Space Ecosystem</strong> — Sentinel-1/2/3, open data EU</div>
+      <div id="sat-content"><div class="loading"><div class="spinner"></div>Interrogation Copernicus OData…</div></div>
+    </div>
+
+    <!-- ════ MÉTÉO ════ -->
+    <div id="panel-meteo" class="panel">
+      <div class="section-title">🌨️ Météo <span class="accent">Nordique (MSC/ECCC)</span></div>
+      <div class="alert alert-ok">✅ Source souveraine CA : <strong>MSC DataMart ECCC</strong> — METAR + données stations</div>
+      <div id="meteo-content"><div class="loading"><div class="spinner"></div>Chargement météo nordique…</div></div>
+    </div>
+
+    <!-- ════ INFRASTRUCTURE ════ -->
+    <div id="panel-infrastructure" class="panel">
+      <div class="section-title">⚡ Infrastructures <span class="accent">Critiques nordiques</span></div>
+      <div id="infra-content"><div class="loading"><div class="spinner"></div>Chargement infrastructures…</div></div>
+    </div>
+
+    <!-- ════ GLACE ════ -->
+    <div id="panel-glace" class="panel">
+      <div class="section-title">🧊 Glace marine <span class="accent">Canadian Ice Service</span></div>
+      <div class="alert alert-ok">✅ Source souveraine CA : <strong>CIS/ECCC</strong> — données quotidiennes</div>
+      <div id="glace-content"><div class="loading"><div class="spinner"></div>Chargement données glace…</div></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Navigation ─────────────────────────────────────────────────
+const loaded = {};
+function show(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'"))
+      n.classList.add('active');
+  });
+  if (!loaded[name]) { loadPanel(name); loaded[name] = true; }
+}
+
+// ── Horloge ────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleString('fr-CA', {hour:'2-digit', minute:'2-digit', second:'2-digit', timeZone:'UTC'}) + ' UTC';
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── API helpers ────────────────────────────────────────────────
+async function api(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+// ── Load panel logic ───────────────────────────────────────────
+async function loadPanel(name) {
+  try {
+    if (name === 'dashboard')     await loadDashboard();
+    if (name === 'rapports')      await loadRapports();
+    if (name === 'carte')         await loadCarte();
+    if (name === 'ais')           await loadAIS();
+    if (name === 'adsb')          await loadADSB();
+    if (name === 'satellite')     await loadSatellite();
+    if (name === 'meteo')         await loadMeteo();
+    if (name === 'infrastructure')await loadInfra();
+    if (name === 'glace')         await loadGlace();
+  } catch(e) {
+    const el = document.getElementById(name + '-content');
+    if (el) el.innerHTML = `<div class="alert alert-warn">Erreur: ${e.message}</div>`;
+  }
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+async function loadDashboard() {
+  const [targets, adsb] = await Promise.all([
+    api('/api/targets').catch(() => []),
+    api('/north/adsb').catch(() => ({})),
+  ]);
+  const scans = targets.reduce((a, t) => a + (t.scans || 0), 0);
+  document.getElementById('s-scans').textContent   = scans;
+  document.getElementById('s-targets').textContent = targets.length;
+  document.getElementById('s-flights').textContent = adsb.count ?? '—';
+  document.getElementById('s-vessels').textContent = '—';
+  document.getElementById('dot-db').className = 'dot green';
+  document.getElementById('dot-arctic').className = 'dot ' + (adsb.count !== undefined ? 'green' : 'yellow');
+
+  // Remplir tableau scans depuis /api/targets
+  const tbody = document.querySelector('#tbl-scans tbody');
+  if (!targets.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1.5rem">Aucun scan</td></tr>';
+    return;
+  }
+  tbody.innerHTML = targets.slice(0, 10).map(t =>
+    `<tr><td><a href="#" onclick="show('scan');document.getElementById('scan-input').value='${t.value}'" style="color:var(--accent)">${t.value}</a></td>
+     <td><span class="badge b-info">${t.kind}</span></td>
+     <td><span class="badge b-done">done</span></td>
+     <td style="color:var(--muted)">—</td></tr>`
+  ).join('');
+}
+
+// ── Rapports ───────────────────────────────────────────────────
+async function loadRapports() {
+  const targets = await api('/api/targets');
+  const tbody = document.querySelector('#tbl-reports tbody');
+  tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:2rem">
+    ${targets.length ? targets.length + ' cible(s) — consultez /api/report/&lt;id&gt; pour les rapports JSON' : 'Aucun scan enregistré'}
+  </td></tr>`;
+  // Charger l'historique des scans via /api/targets
+  if (targets.length) {
+    tbody.innerHTML = targets.map((t, i) =>
+      `<tr>
+        <td>${i+1}</td>
+        <td><strong>${t.value}</strong></td>
+        <td><span class="badge b-info">${t.kind}</span></td>
+        <td><span class="badge b-done">done</span></td>
+        <td><code style="font-size:.72rem;color:var(--muted)">—</code></td>
+        <td style="color:var(--muted)">—</td>
+        <td><a href="/api/stats/${t.value}" target="_blank" class="badge b-info" style="text-decoration:none">Stats</a></td>
+      </tr>`
+    ).join('');
+  }
+}
+
+// ── Carte ──────────────────────────────────────────────────────
+async function loadCarte() {
+  const r = await fetch('/north/map');
+  const html = await r.text();
+  const iframe = document.createElement('iframe');
+  iframe.id = 'map-frame';
+  iframe.srcdoc = html;
+  document.getElementById('map-container').innerHTML = '';
+  document.getElementById('map-container').appendChild(iframe);
+}
+
+// ── AIS ────────────────────────────────────────────────────────
+async function loadAIS() {
+  const data = await api('/north/ais');
+  const el = document.getElementById('ais-content');
+  if (data.error) {
+    el.innerHTML = `<div class="alert alert-warn">⚠️ ${data.error}</div>
+      <div class="card"><div class="card-header">Zones surveillées</div><div class="card-body">
+        ${Object.entries({
+          'Passage du Nord-Ouest': '69–75°N, 80–141°O',
+          'Mer de Beaufort':       '68–78°N, 120–141°O',
+          'Baie de Baffin':        '65–78°N, 55–80°O',
+          'Baie d\'Hudson':        '55–65°N, 65–95°O',
+        }).map(([z,c]) => `<div class="infra-item"><span class="name">${z}</span><span class="operator">${c}</span></div>`).join('')}
+      </div></div>`;
+    return;
+  }
+  const vessels = data.vessels || [];
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" style="color:var(--accent2)">${data.count ?? 0}</div><div class="lbl">Vessels détectés</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--yellow)">${Object.keys(data.zones || {}).length}</div><div class="lbl">Zones actives</div></div>
+    </div>
+    <div class="card"><div class="card-header">Vessels actifs <span class="badge">${vessels.length}</span></div>
+    <div class="card-body" style="padding:0">
+    ${vessels.length ? `<table><thead><tr><th>MMSI</th><th>Nom</th><th>Type</th><th>Vitesse</th><th>Destination</th></tr></thead><tbody>
+      ${vessels.map(v => `<tr>
+        <td><code>${v.mmsi||'—'}</code></td>
+        <td>${v.name||'—'}</td>
+        <td>${v.type||'—'}</td>
+        <td>${v.speed != null ? v.speed + ' kn' : '—'}</td>
+        <td>${v.destination||'—'}</td>
+      </tr>`).join('')}
+    </tbody></table>` : '<div style="padding:1.5rem;color:var(--muted);text-align:center">Aucun vessel dans la zone</div>'}
+    </div></div>`;
+}
+
+// ── ADS-B ──────────────────────────────────────────────────────
+async function loadADSB() {
+  const data = await api('/north/adsb');
+  const el = document.getElementById('adsb-content');
+  const flights = data.flights || [];
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" style="color:var(--orange)">${data.count ?? 0}</div><div class="lbl">Vols actifs</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--muted)">${flights.filter(f=>!f.on_ground).length}</div><div class="lbl">En vol</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--green)">${flights.filter(f=>f.on_ground).length}</div><div class="lbl">Au sol</div></div>
+    </div>
+    <div class="card"><div class="card-header">Vols détectés — 60–90°N <span class="badge">${flights.length}</span></div>
+    <div class="card-body" style="padding:0">
+    ${flights.length ? `<table><thead><tr><th>ICAO24</th><th>Callsign</th><th>Pays</th><th>Alt (m)</th><th>Vitesse</th><th>Cap</th><th>Sol</th></tr></thead><tbody>
+      ${flights.slice(0, 50).map(f => `<tr>
+        <td><code style="font-size:.7rem">${f.icao24||'—'}</code></td>
+        <td><strong>${f.callsign||'—'}</strong></td>
+        <td>${f.origin_country||'—'}</td>
+        <td>${f.altitude_m != null ? Math.round(f.altitude_m) : '—'}</td>
+        <td>${f.velocity_ms != null ? Math.round(f.velocity_ms*1.944) + ' kn' : '—'}</td>
+        <td>${f.heading != null ? Math.round(f.heading) + '°' : '—'}</td>
+        <td>${f.on_ground ? '<span class="badge b-low">sol</span>' : '<span class="badge b-info">vol</span>'}</td>
+      </tr>`).join('')}
+    </tbody></table>` : '<div style="padding:1.5rem;color:var(--muted);text-align:center">Aucun vol détecté dans la zone</div>'}
+    </div></div>`;
+}
+
+// ── Satellite ──────────────────────────────────────────────────
+async function loadSatellite() {
+  const data = await api('/north/satellite');
+  const el = document.getElementById('sat-content');
+  const products = data.products || [];
+  const byCol = {};
+  products.forEach(p => {
+    if (!byCol[p.collection]) byCol[p.collection] = [];
+    byCol[p.collection].push(p);
+  });
+  const colIcon = {'SENTINEL-1':'🛰️ SAR', 'SENTINEL-2':'🌍 Optique', 'SENTINEL-3':'🌊 Océan'};
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" style="color:var(--accent)">${data.total ?? 0}</div><div class="lbl">Produits trouvés</div></div>
+      ${Object.entries(byCol).map(([c,ps]) =>
+        `<div class="stat-card"><div class="num" style="color:var(--accent2)">${ps.length}</div><div class="lbl">${colIcon[c]||c}</div></div>`
+      ).join('')}
+    </div>
+    ${data.errors && data.errors.length ? `<div class="alert alert-warn">⚠️ ${data.errors.join(' | ')}</div>` : ''}
+    ${Object.entries(byCol).map(([col, ps]) => `
+    <div class="card">
+      <div class="card-header">${colIcon[col]||col} — ${col} <span class="badge">${ps.length}</span></div>
+      <div class="card-body" style="padding:0">
+        <table><thead><tr><th>Nom produit</th><th>Date</th><th>Taille</th><th>En ligne</th><th>Liens</th></tr></thead><tbody>
+        ${ps.slice(0, 10).map(p => `<tr>
+          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem" title="${p.name||''}">${p.name||'—'}</td>
+          <td style="color:var(--muted);font-size:.75rem">${(p.date||'').slice(0,16)}</td>
+          <td>${p.size_mb ? p.size_mb + ' MB' : '—'}</td>
+          <td>${p.online ? '<span class="badge b-true">✓</span>' : '<span class="badge b-false">✗</span>'}</td>
+          <td>
+            ${p.viewer ? `<a href="${p.viewer}" target="_blank" class="badge b-info" style="text-decoration:none">Viewer</a>` : ''}
+            ${p.download ? `<a href="${p.download}" target="_blank" class="badge b-low" style="text-decoration:none">DL</a>` : ''}
+          </td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`).join('')}
+    <div class="card">
+      <div class="card-header">WMS — Tuiles visualisation</div>
+      <div class="card-body">
+        ${Object.entries((data.wms && data.wms.layers) || {}).map(([col, url]) =>
+          `<div class="infra-item"><span class="name">${colIcon[col]||col}</span>
+           <a href="${url}" target="_blank" class="badge b-info" style="text-decoration:none">Ouvrir WMS</a></div>`
+        ).join('')}
+      </div>
+    </div>`;
+}
+
+// ── Météo ──────────────────────────────────────────────────────
+async function loadMeteo() {
+  const data = await api('/north/weather');
+  const el = document.getElementById('meteo-content');
+  const stations = data.all_stations || {};
+  el.innerHTML = `
+    <div class="wx-grid">
+      ${Object.entries(stations).map(([code, s]) => `
+      <div class="wx-card">
+        <div class="station">${s.name}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${code} · ${s.prov} · ${s.lat}°N ${Math.abs(s.lon)}°O</div>
+        ${code === data.station && data.metar_raw
+          ? `<div class="metar">${data.metar_raw}</div>`
+          : `<div class="metar" style="color:var(--muted)">METAR: cliquez pour charger</div>`}
+        <div style="margin-top:.5rem">
+          <a href="/north/weather?station=${code}" target="_blank" class="badge b-info" style="text-decoration:none;font-size:.68rem">METAR live</a>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="card" style="margin-top:.5rem">
+      <div class="card-header">Seuils alertes conditions extrêmes</div>
+      <div class="card-body">
+        <div class="three-col">
+          <div class="stat-card"><div class="num" style="color:var(--orange)">35 kn</div><div class="lbl">Tempête (vent)</div></div>
+          <div class="stat-card"><div class="num" style="color:var(--yellow)">400 m</div><div class="lbl">White-out (visibilité)</div></div>
+          <div class="stat-card"><div class="num" style="color:var(--accent)">−40°C</div><div class="lbl">Froid extrême</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Infrastructure ─────────────────────────────────────────────
+async function loadInfra() {
+  const data = await api('/north/infrastructure?region=all');
+  const el = document.getElementById('infra-content');
+  const vuln = data.vulnerable || [];
+  const cats = data.categories || {};
+  const catIcon = {telecommunications:'📡', energy:'⚡', transport:'🚁',
+                   military_public:'🪖', health:'🏥', water:'💧'};
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" style="color:var(--accent)">${data.total_items}</div><div class="lbl">Infrastructures</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--red)">${vuln.length}</div><div class="lbl">Vulnérables</div></div>
+    </div>
+    ${vuln.length ? `<div class="alert alert-warn">⚠️ ${vuln.length} infrastructure(s) vulnérable(s) identifiée(s)</div>` : ''}
+    ${Object.entries(cats).map(([cat, items]) => `
+    <div class="infra-cat">
+      <div class="infra-cat-title">${catIcon[cat]||'•'} ${cat.replace(/_/g,' ').toUpperCase()}</div>
+      ${items.map(item => `
+      <div class="infra-item">
+        <div>
+          <div class="name">${item.name}</div>
+          <div class="operator">${item.operator||''} ${item.region||''} ${item.note ? '· '+item.note.slice(0,60) : ''}</div>
+        </div>
+        <div style="display:flex;gap:.3rem;align-items:center">
+          ${item.vulnerable ? '<span class="vuln-tag">VULN</span>' : ''}
+          ${item.strategic  ? '<span class="badge b-high">STRATÉGIQUE</span>' : ''}
+          ${item.sovereign === false ? '<span class="badge b-medium">NON-CA</span>' : ''}
+        </div>
+      </div>`).join('')}
+    </div>`).join('')}`;
+}
+
+// ── Glace ──────────────────────────────────────────────────────
+async function loadGlace() {
+  const data = await api('/north/ice');
+  const el = document.getElementById('glace-content');
+  const products = data.products || {};
+  const liveOk = data.live_status === 'ok';
+  el.innerHTML = `
+    <div class="alert ${liveOk ? 'alert-ok' : 'alert-warn'}" id="glace-live-status">
+      ${liveOk
+        ? '✅ DataMart CIS accessible — <code>' + data.datamart + '</code>'
+        : '⚠️ DataMart live inaccessible (<code>' + (data.live_status||'?') + '</code>) — métadonnées statiques affichées'}
+    </div>
+    <div class="card" id="glace-products-card">
+      <div class="card-header">Produits CIS disponibles <span class="badge">${Object.keys(products).length}</span></div>
+      <div class="card-body">
+        ${Object.entries(products).map(([key, p]) => `
+        <div class="infra-item">
+          <div>
+            <div class="name">${p.region}</div>
+            <div class="operator">${key.replace(/_/g,' ')}</div>
+          </div>
+          <a href="${p.url}" target="_blank" class="badge b-info" style="text-decoration:none">Ouvrir CIS</a>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Codes concentration (WMO Egg Code)</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.4rem">
+          ${Object.entries(data.concentration||{}).map(([k,v]) =>
+            `<div style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;font-size:.75rem">
+              <code style="color:var(--accent)">${k}</code> — ${v}
+            </div>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">DataMart ECCC — flux direct</div>
+      <div class="card-body">
+        <a href="${data.datamart}" target="_blank" class="badge b-info" style="text-decoration:none">Ouvrir DataMart CIS</a>
+        <span style="font-size:.75rem;color:var(--muted);margin-left:.8rem">Mise à jour quotidienne — souverain CA</span>
+      </div>
+    </div>`;
+}
+
+// ── Scan OSINT ─────────────────────────────────────────────────
+async function doScan() {
+  const target = document.getElementById('scan-input').value.trim();
+  if (!target) return;
+  const out = document.getElementById('scan-output');
+  const summary = document.getElementById('scan-summary');
+  const status = document.getElementById('scan-status');
+  out.textContent = 'Scan en cours…';
+  summary.innerHTML = '<div class="loading"><div class="spinner"></div>Collecte des données…</div>';
+  status.innerHTML = '';
+  try {
+    const r = await fetch('/api/scan', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({target})
+    });
+    const data = await r.json();
+    out.textContent = JSON.stringify(data, null, 2);
+    renderScanSummary(summary, data);
+    loaded['dashboard'] = false;
+    loaded['rapports'] = false;
+  } catch(e) {
+    out.textContent = 'Erreur: ' + e;
+    status.innerHTML = `<div class="alert alert-warn">Erreur: ${e.message}</div>`;
+  }
+}
+
+function renderScanSummary(el, data) {
+  const results = data.results || [];
+  const dns  = results.find(r => r.source === 'dns')?.data || {};
+  const http = results.find(r => r.source === 'http')?.data || {};
+  const whois= results.find(r => r.source === 'whois')?.data || {};
+  const cve  = results.find(r => r.source === 'cve')?.data || {};
+  const ssl  = http.ssl || {};
+
+  el.innerHTML = `
+    <div style="margin-bottom:.8rem">
+      <strong style="color:var(--bright)">${data.target}</strong>
+      <span class="badge b-info" style="margin-left:.4rem">${data.kind}</span>
+      <code style="font-size:.68rem;color:var(--muted);margin-left:.4rem">${(data.hash||'').slice(0,12)}</code>
+    </div>
+    <table>
+      <tr><td style="color:var(--muted)">DNS records</td><td>${dns.record_count ?? '—'}</td></tr>
+      <tr><td style="color:var(--muted)">IP(s)</td><td>${(dns.records?.A || []).join(', ') || '—'}</td></tr>
+      <tr><td style="color:var(--muted)">MX</td><td style="font-size:.75rem">${(dns.records?.MX || []).join(', ') || '—'}</td></tr>
+      <tr><td style="color:var(--muted)">DMARC</td><td style="font-size:.75rem">
+        ${http.dmarc
+          ? `<span class="badge ${http.dmarc.includes('p=reject') ? 'b-true' : http.dmarc.includes('p=quarantine') ? 'b-medium' : 'b-high'}">${http.dmarc.slice(0,50)}</span>`
+          : '<span class="badge b-false">ABSENT</span>'}
+      </td></tr>
+      <tr><td style="color:var(--muted)">SPF</td><td style="font-size:.75rem">
+        ${http.spf
+          ? `<span class="badge ${http.spf.includes('-all') ? 'b-true' : 'b-medium'}">${http.spf.slice(0,50)}</span>`
+          : '<span class="badge b-false">ABSENT</span>'}
+      </td></tr>
+      <tr><td style="color:var(--muted)">SSL expiry</td><td>
+        ${ssl.days_left != null
+          ? `<span class="badge ${ssl.days_left > 60 ? 'b-true' : ssl.days_left > 0 ? 'b-medium' : 'b-false'}">${ssl.days_left}j</span> ${ssl.issuer?.organizationName||''}`
+          : '—'}
+      </td></tr>
+      <tr><td style="color:var(--muted)">Registrar</td><td>${whois.registrar || '—'}</td></tr>
+      <tr><td style="color:var(--muted)">Expiration</td><td>
+        ${whois.expiration_date
+          ? `<span class="badge b-medium">${(whois.expiration_date||'').slice(0,10)}</span>`
+          : '—'}
+      </td></tr>
+      <tr><td style="color:var(--muted)">CVEs trouvés</td><td>
+        ${cve.total != null
+          ? `<span class="badge ${cve.total > 0 ? 'b-high' : 'b-true'}">${cve.total}</span>`
+          : '—'}
+      </td></tr>
+      <tr><td style="color:var(--muted)">Headers manquants</td><td style="font-size:.75rem">
+        ${(http.missing_headers || []).map(h => `<span class="badge b-medium" style="margin:.1rem">${h}</span>`).join('') || '<span class="badge b-true">Aucun</span>'}
+      </td></tr>
+    </table>`;
+}
+
+document.getElementById('scan-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doScan();
+});
+
+// ── Init ───────────────────────────────────────────────────────
+loadPanel('dashboard');
+</script>
+</body>
+</html>
