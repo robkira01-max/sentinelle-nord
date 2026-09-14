@@ -62,6 +62,35 @@ def _ssl_badge(ssl: dict) -> str:
     return f'<span class="badge green">{days}j ✓</span>'
 
 
+def _render_risk_breakdown(breakdown: dict) -> str:
+    if not breakdown:
+        return '<p style="color:#888;font-size:8pt">Aucun finding calculé.</p>'
+    parts = []
+    for cat, items in breakdown.items():
+        rows = ""
+        for f in items:
+            mults = " → ".join(f.get("multipliers", []))
+            rows += (
+                f'<tr><td>{f["title"][:70]}</td>'
+                f'<td style="text-align:center">{f["cvss_base"]}</td>'
+                f'<td style="text-align:center;font-weight:bold;color:{f["color"]}">'
+                f'{f["weighted"]}</td>'
+                f'<td><span class="badge" style="background:{f["color"]}20;color:{f["color"]}">'
+                f'{f["severity"]}</span></td>'
+                f'<td style="font-size:7pt;color:#666">{mults}</td></tr>'
+            )
+        parts.append(
+            f'<div style="margin-bottom:10px">'
+            f'<div style="font-size:8pt;font-weight:bold;color:#1a3a6a;'
+            f'border-bottom:1px solid #dee2f0;padding-bottom:3px;margin-bottom:4px">'
+            f'{cat}</div>'
+            f'<table><tr><th>Finding</th><th>CVSS base</th><th>Pondéré</th>'
+            f'<th>Sévérité</th><th>Multiplicateurs</th></tr>'
+            f'{rows}</table></div>'
+        )
+    return "".join(parts)
+
+
 def _render_infra_item(item: dict) -> str:
     name = item.get("name", "—")
     itype = item.get("type", "—")
@@ -96,8 +125,10 @@ def _render_infra_cats(cats: dict, cat_icon: dict) -> str:
 
 
 def build_html(scan: dict, infra: dict, satellite: dict,
-               weather: dict, adsb: dict, targets: list) -> str:
+               weather: dict, adsb: dict, targets: list,
+               risk: dict | None = None) -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    risk = risk or {}
 
     # ── Extraire données scan canada.ca ────────────────────────
     sections = scan.get("sections", {})
@@ -140,6 +171,16 @@ def build_html(scan: dict, infra: dict, satellite: dict,
         "telecommunications": "📡", "energy": "⚡", "transport": "🚁",
         "military_public": "🪖", "health": "🏥", "water": "💧",
     }
+
+    # ── Pré-calcul (évite {{}} dans f-string) ─────────────────
+    risk_breakdown_html = _render_risk_breakdown(risk.get("breakdown") or {})
+    risk_score_val  = risk.get("score", 0)
+    risk_grade_val  = risk.get("grade", "—")
+    risk_label_val  = risk.get("label", "—")
+    risk_color_val  = risk.get("color", "#aaa")
+    risk_method_val = risk.get("methodology", "")
+    risk_total_val  = risk.get("total_findings", 0)
+    risk_crit_val   = risk.get("critical_count", 0)
 
     # ── Pré-calcul valeurs SSL (évite {{}} dans f-string) ──────
     ssl_issuer   = ssl.get("issuer") or {}
@@ -347,10 +388,61 @@ def build_html(scan: dict, infra: dict, satellite: dict,
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     SECTION 2 — SCAN OSINT : CANADA.CA
+     SECTION 2 — SCORE DE RISQUE PONDÉRÉ
 ══════════════════════════════════════════════════ -->
 <div class="page-break"></div>
-<h2 class="section">2. Scan OSINT — canada.ca (Portail fédéral canadien)</h2>
+<h2 class="section">2. Score de risque pondéré — canada.ca</h2>
+
+<div style="display:flex;gap:15px;align-items:center;margin-bottom:14px">
+  <div style="text-align:center;background:{risk_color_val};color:white;
+              border-radius:50%;width:90px;height:90px;display:flex;
+              flex-direction:column;justify-content:center;flex-shrink:0;
+              padding:5px">
+    <div style="font-size:22pt;font-weight:bold;line-height:1">{risk_score_val}</div>
+    <div style="font-size:10pt;font-weight:bold">/10</div>
+    <div style="font-size:8pt">{risk_grade_val}</div>
+  </div>
+  <div style="flex:1">
+    <div style="font-size:13pt;font-weight:bold;color:{risk_color_val}">
+      {risk_label_val}
+    </div>
+    <div style="font-size:7.5pt;color:#555;margin-top:4px">
+      {risk_method_val}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <div class="stat-box" style="min-width:70px">
+        <div class="num" style="font-size:16pt;color:{risk_color_val}">{risk_total_val}</div>
+        <div class="lbl">Findings</div>
+      </div>
+      <div class="stat-box" style="min-width:70px">
+        <div class="num" style="font-size:16pt;color:#dc3545">{risk_crit_val}</div>
+        <div class="lbl">Critiques</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 class="sub">2.1 Findings pondérés — détail par catégorie</h3>
+{risk_breakdown_html}
+
+<h3 class="sub">2.2 Méthodologie de pondération</h3>
+<table>
+  <tr><th>Multiplicateur</th><th>Facteur</th><th>Condition</th></tr>
+  <tr><td>CISA KEV</td><td>×1.5</td><td>Vulnérabilité exploitée in-the-wild (catalogue KEV)</td></tr>
+  <tr><td>Patch Age</td><td>×1.2</td><td>Correctif disponible depuis plus de 180 jours</td></tr>
+  <tr><td>Exposition email</td><td>×1.1</td><td>DMARC absent, SPF softfail, DKIM manquant</td></tr>
+  <tr><td>Exposé internet</td><td>×1.2</td><td>Service admin/infra accessible publiquement</td></tr>
+  <tr><td>Sans authentification</td><td>×1.3</td><td>Interface sans auth détectée</td></tr>
+  <tr><td>EOL</td><td>×1.1</td><td>Version logicielle hors support officiel</td></tr>
+</table>
+<div class="note">Score final = 0.6 × max(CVSS pondéré) + 0.4 × moyenne(CVSS pondéré), normalisé 0–10.
+Grille : A+ (0-0.9) → A (1-2.9) → B (3-4.9) → C (5-6.9) → D (7-8.9) → F (9-10).</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3 — SCAN OSINT : CANADA.CA
+══════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2 class="section">3. Scan OSINT — canada.ca (Portail fédéral canadien)</h2>
 
 <div class="warn-banner">
   ⚠️ <strong>Expiration domaine dans ~32 jours</strong> — canada.ca expire le 2026-10-16.
@@ -365,7 +457,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
 </div>
 <div style="font-size:7pt;color:#888;margin-top:-6px;margin-bottom:10px">* Headers non collectés — timeout WAF/CDN Cloudflare</div>
 
-<h3 class="sub">2.1 DNS</h3>
+<h3 class="sub">3.1 DNS</h3>
 <div class="two-col">
   <div class="card">
     <div class="card-title">Adresses IP (load balancing SSC)</div>
@@ -402,7 +494,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   </div>
 </div>
 
-<h3 class="sub">2.2 Sécurité email (DMARC / SPF / DKIM)</h3>
+<h3 class="sub">3.2 Sécurité email (DMARC / SPF / DKIM)</h3>
 <table>
   <tr><th>Contrôle</th><th>Valeur</th><th>Évaluation</th></tr>
   <tr>
@@ -422,7 +514,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   </tr>
 </table>
 
-<h3 class="sub">2.3 SSL/TLS</h3>
+<h3 class="sub">3.3 SSL/TLS</h3>
 <table>
   <tr><th>Champ</th><th>Valeur</th></tr>
   <tr><td>Expiry</td><td>{ssl.get('not_after','—')} {_ssl_badge(ssl)}</td></tr>
@@ -431,7 +523,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   <tr><td>SANs ({len(sans)})</td><td>{'  '.join(f'<span class="tag">{s}</span>' for s in sans)}</td></tr>
 </table>
 
-<h3 class="sub">2.4 WHOIS</h3>
+<h3 class="sub">3.4 WHOIS</h3>
 <table>
   <tr><th>Champ</th><th>Valeur</th></tr>
   <tr><td>Registrar</td><td>{whois_data.get('registrar','—')}</td></tr>
@@ -444,14 +536,14 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   <tr><td>Name servers</td><td>{'  '.join(f'<span class="tag">{ns}</span>' for ns in (whois_data.get('name_servers') or [])[:6])}</td></tr>
 </table>
 
-<h3 class="sub">2.5 CVEs (keyword: canada)</h3>
+<h3 class="sub">3.5 CVEs (keyword: canada)</h3>
 {f'''<div class="note">ℹ️ Keyword trop générique — configurez <code>CVE_KEYWORD</code> dans .env pour cibler la stack réelle.</div>
 <table>
   <tr><th>CVE</th><th>Score CVSS</th><th>Sévérité</th></tr>
   {"".join(f'<tr><td><code>{c.get("cve","—")}</code></td><td>{c.get("score","—")}</td><td><span class="badge {'orange' if (c.get('score') or 0) >= 5 else 'grey'}">{c.get("severity","—")}</span></td></tr>' for c in cve_items)}
 </table>''' if cve_items else '<p style="color:#888;font-size:8pt">Aucun CVE retourné.</p>'}
 
-<h3 class="sub">2.6 Findings prioritaires</h3>
+<h3 class="sub">3.6 Findings prioritaires</h3>
 <div class="finding high">
   <div class="ftitle">🔴 Expiration domaine canada.ca dans ~32 jours</div>
   <div class="fdesc">Expiration le 2026-10-16. Si non renouvelé, canada.ca peut être enregistré par un tiers.
@@ -477,7 +569,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
      SECTION 3 — PIPELINE ARCTIQUE
 ══════════════════════════════════════════════════ -->
 <div class="page-break"></div>
-<h2 class="section">3. Pipeline Arctique — État opérationnel</h2>
+<h2 class="section">4. Pipeline Arctique — État opérationnel</h2>
 
 <div class="stat-row">
   <div class="stat-box"><div class="num" style="color:#4a9eff">{flight_count}</div><div class="lbl">Vols ADS-B actifs</div></div>
@@ -488,7 +580,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   <div class="stat-box"><div class="num" style="color:#9c27b0">4</div><div class="lbl">Produits CIS glace</div></div>
 </div>
 
-<h3 class="sub">3.1 ADS-B — Trafic aérien polaire (OpenSky Network)</h3>
+<h3 class="sub">4.1 ADS-B — Trafic aérien polaire (OpenSky Network)</h3>
 <div class="ok-banner">✅ Source : OpenSky Network (EU) — libre, sans inscription — zone 60–90°N</div>
 <table>
   <tr><th>ICAO24</th><th>Callsign</th><th>Pays</th><th>Altitude (m)</th><th>Vitesse</th><th>Sol</th></tr>
@@ -502,7 +594,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   )) if flights else '<tr><td colspan="6" style="text-align:center;color:#888">Aucun vol détecté dans la zone</td></tr>'}
 </table>
 
-<h3 class="sub">3.2 Satellites Copernicus — Produits récents (3 jours)</h3>
+<h3 class="sub">4.2 Satellites Copernicus — Produits récents (3 jours)</h3>
 <div class="ok-banner">✅ Source : Copernicus Data Space Ecosystem (EU) — OData API sans authentification</div>
 <div class="stat-row">
   {(''.join(
@@ -523,7 +615,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   ))}
 </table>
 
-<h3 class="sub">3.3 Météo nordique — MSC DataMart ECCC (souverain CA)</h3>
+<h3 class="sub">4.3 Météo nordique — MSC DataMart ECCC (souverain CA)</h3>
 <table>
   <tr><th>Code ICAO</th><th>Station</th><th>Province</th><th>Lat</th><th>Lon</th></tr>
   {(''.join(
@@ -533,16 +625,16 @@ def build_html(scan: dict, infra: dict, satellite: dict,
   ))}
 </table>
 
-<h3 class="sub">3.4 Infrastructures critiques nordiques</h3>
+<h3 class="sub">4.4 Infrastructures critiques nordiques</h3>
 {_render_infra_cats(cats, cat_icon)}
 
 <!-- ══════════════════════════════════════════════════
      SECTION 4 — RECOMMANDATIONS
 ══════════════════════════════════════════════════ -->
 <div class="page-break"></div>
-<h2 class="section">4. Recommandations</h2>
+<h2 class="section">5. Recommandations</h2>
 
-<h3 class="sub">4.1 Urgences immédiates — canada.ca</h3>
+<h3 class="sub">5.1 Urgences immédiates — canada.ca</h3>
 <table>
   <tr><th>#</th><th>Recommandation</th><th>Priorité</th><th>Délai</th></tr>
   <tr><td>R1</td><td>Renouveler le domaine canada.ca avant le 2026-10-16</td>
@@ -555,7 +647,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
       <td><span class="badge grey">NORMALE</span></td><td>7 jours</td></tr>
 </table>
 
-<h3 class="sub">4.2 Plateforme — extensions prioritaires</h3>
+<h3 class="sub">5.2 Plateforme — extensions prioritaires</h3>
 <table>
   <tr><th>#</th><th>Fonctionnalité</th><th>Impact</th><th>Effort</th></tr>
   <tr><td>P1</td><td>Score de risque pondéré CVSS × KEV × âge (de cve_engine.py v1)</td>
@@ -572,7 +664,7 @@ def build_html(scan: dict, infra: dict, satellite: dict,
       <td><span class="badge grey">NORMAL</span></td><td>Moyen</td></tr>
 </table>
 
-<h3 class="sub">4.3 Souveraineté numérique — état des sources</h3>
+<h3 class="sub">5.3 Souveraineté numérique — état des sources</h3>
 <table>
   <tr><th>Source</th><th>Souveraineté</th><th>Note</th></tr>
   <tr><td>MSC DataMart ECCC</td><td><span class="badge green">✓ Canadienne</span></td><td>Météo, données ouvertes ECCC</td></tr>
@@ -608,8 +700,10 @@ def _guess_service(txt: str) -> str:
 
 
 def main():
+    from datetime import date
+    today = date.today().isoformat()
     parser = argparse.ArgumentParser(description="Génère le PDF Sentinelle Nord Canada")
-    parser.add_argument("--out", default="/home/kali/OSINT_Reports/Sentinelle-NordCanada-2026-09-14.pdf")
+    parser.add_argument("--out", default=f"/home/kali/OSINT_Reports/Sentinelle-NordCanada-{today}.pdf")
     parser.add_argument("--scan-id", type=int, default=4)
     args = parser.parse_args()
 
@@ -625,9 +719,16 @@ def main():
     print(f"  satellite={satellite.get('total')} produits")
     print(f"  infra={infra.get('total_items')} items")
 
+    print("Calcul du score de risque pondéré…")
+    from reporting.risk_score import compute_risk_score
+    risk = compute_risk_score(scan)
+    print(f"  score={risk['score']}/10  grade={risk['grade']}  "
+          f"findings={risk['total_findings']}  critiques={risk['critical_count']}")
+
     print("Génération HTML…")
     html = build_html(scan, infra, satellite, weather, adsb,
-                      targets if isinstance(targets, list) else [])
+                      targets if isinstance(targets, list) else [],
+                      risk=risk)
 
     print("Rendu PDF WeasyPrint…")
     from weasyprint import HTML

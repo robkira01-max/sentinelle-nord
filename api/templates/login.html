@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinelle Nord Canada — Connexion</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0a0d14;
+    --surface:  #0d1a3a;
+    --card:     #111827;
+    --border:   #1e3a5f;
+    --accent:   #4a9eff;
+    --accent2:  #00d4aa;
+    --text:     #e8ecf5;
+    --muted:    #6b85a8;
+    --danger:   #ef4444;
+    --success:  #22c55e;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 420px;
+    padding: 24px 16px;
+  }
+
+  .logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .logo .shield { font-size: 48px; margin-bottom: 8px; }
+  .logo h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+  }
+  .logo p {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 28px;
+  }
+
+  .card h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--accent2);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: #3a5070; }
+
+  .remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    cursor: pointer;
+  }
+  .remember input[type=checkbox] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), #2060cc);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: .03em;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn:hover  { opacity: .9; }
+  .btn:active { transform: scale(.98); }
+
+  .alert {
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .alert.danger  { background: #2d0a0a; border: 1px solid #7f1d1d; color: #fca5a5; }
+  .alert.success { background: #0a2d17; border: 1px solid #166534; color: #86efac; }
+
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 11px;
+    color: #2a4060;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="logo">
+    <div class="shield">🛡️</div>
+    <h1>SENTINELLE NORD CANADA</h1>
+    <p>Plateforme OSINT / Threat Intelligence Arctique</p>
+  </div>
+
+  <div class="card">
+    <h2>🔐 Connexion sécurisée</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.login_post') }}" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+
+      <div class="field">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" name="username"
+               placeholder="admin" autocomplete="username"
+               autofocus required>
+      </div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password"
+               placeholder="••••••••••••" autocomplete="current-password" required>
+      </div>
+
+      <label class="remember">
+        <input type="checkbox" name="remember"> Se souvenir de moi (7 jours)
+      </label>
+
+      <button type="submit" class="btn">Se connecter</button>
+    </form>
+  </div>
+
+  <div class="footer">
+    Usage interne — recon passive uniquement<br>
+    Sentinelle Nord Canada v2.0
+  </div>
+</div>
+</body>
+</html>

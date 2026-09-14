@@ -1,8 +1,46 @@
-"""Modèles SQLAlchemy — persistance des scans et résultats bruts."""
+"""Modèles SQLAlchemy — persistance des scans, résultats et utilisateurs."""
 from datetime import datetime, timezone
+from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
+
+# Rôles disponibles — du plus restreint au plus permissif
+ROLES = ("readonly", "analyst", "admin")
+
+
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+    id         = db.Column(db.Integer, primary_key=True)
+    username   = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    pw_hash    = db.Column(db.String(256), nullable=False)
+    role       = db.Column(db.String(16), nullable=False, default="analyst")
+    active     = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_login = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    def set_password(self, password: str) -> None:
+        self.pw_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.pw_hash, password)
+
+    @property
+    def is_active(self) -> bool:  # type: ignore[override]
+        return self.active
+
+    def has_role(self, *roles: str) -> bool:
+        return self.role in roles
+
+    def can_scan(self) -> bool:
+        return self.role in ("analyst", "admin")
+
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+    def __repr__(self) -> str:
+        return f"<User {self.username!r} role={self.role}>"
 
 
 def _utcnow():

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinelle — Gestion des utilisateurs</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0d14; --surface: #0d1a3a; --card: #111827;
+    --border: #1e3a5f; --accent: #4a9eff; --accent2: #00d4aa;
+    --text: #e8ecf5; --muted: #6b85a8;
+  }
+  body { background: var(--bg); color: var(--text);
+         font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  nav {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; align-items: center; gap: 16px;
+  }
+  nav .logo { font-size: 16px; font-weight: 700; color: var(--accent); }
+  nav a { color: var(--muted); text-decoration: none; font-size: 13px; }
+  nav a:hover { color: var(--text); }
+  nav .ml { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  nav .user-tag {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--accent2);
+  }
+  .main { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+  h1 { font-size: 20px; margin-bottom: 24px; color: var(--accent2); }
+  .alert { border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-bottom: 18px; }
+  .alert.danger  { background: #2d0a0a; border: 1px solid #7f1d1d; color: #fca5a5; }
+  .alert.success { background: #0a2d17; border: 1px solid #166534; color: #86efac; }
+  .card { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 24px; margin-bottom: 24px; }
+  .card h2 { font-size: 14px; color: var(--accent); margin-bottom: 16px;
+             border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #0a1628; color: #8fa8d0; padding: 8px 12px;
+       text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: #0d1828; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+           font-size: 11px; font-weight: 600; }
+  .badge.admin    { background: #312e81; color: #a5b4fc; }
+  .badge.analyst  { background: #1e3a5f; color: #93c5fd; }
+  .badge.readonly { background: #1c2533; color: #94a3b8; }
+  .badge.active   { background: #14532d; color: #86efac; }
+  .badge.inactive { background: #450a0a; color: #fca5a5; }
+  input[type=text], input[type=password], select {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 13px; padding: 7px 10px; outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .btn { display: inline-block; padding: 7px 14px; border-radius: 6px;
+         font-size: 12px; font-weight: 600; cursor: pointer; border: none;
+         text-decoration: none; }
+  .btn-blue   { background: var(--accent); color: #fff; }
+  .btn-red    { background: #7f1d1d; color: #fca5a5; }
+  .btn-grey   { background: var(--surface); color: var(--muted);
+                border: 1px solid var(--border); }
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .form-row .field { display: flex; flex-direction: column; gap: 4px; }
+  .form-row label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🛡️ Sentinelle Nord Canada</span>
+  <a href="{{ url_for('api.dashboard') }}">← Dashboard</a>
+  <div class="ml">
+    <span class="user-tag">{{ current_user.username }} · {{ current_user.role }}</span>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-grey">Déconnexion</a>
+  </div>
+</nav>
+
+<div class="main">
+  <h1>👥 Gestion des utilisateurs</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Créer un utilisateur -->
+  <div class="card">
+    <h2>➕ Créer un utilisateur</h2>
+    <form method="POST" action="{{ url_for('auth.create_user') }}">
+      <div class="form-row">
+        <div class="field">
+          <label>Nom d'utilisateur</label>
+          <input type="text" name="username" placeholder="analyste01" required minlength="3">
+        </div>
+        <div class="field">
+          <label>Mot de passe (min 12 car.)</label>
+          <input type="password" name="password" placeholder="••••••••••••" required minlength="12">
+        </div>
+        <div class="field">
+          <label>Rôle</label>
+          <select name="role">
+            {% for r in roles %}
+              <option value="{{ r }}" {% if r == 'analyst' %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-blue">Créer</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Liste des utilisateurs -->
+  <div class="card">
+    <h2>📋 Utilisateurs existants ({{ users|length }})</h2>
+    <table>
+      <tr>
+        <th>Utilisateur</th><th>Rôle</th><th>Statut</th>
+        <th>Créé</th><th>Dernière connexion</th><th>Actions</th>
+      </tr>
+      {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username }}</strong></td>
+        <td><span class="badge {{ u.role }}">{{ u.role }}</span></td>
+        <td>
+          {% if u.active %}
+            <span class="badge active">Actif</span>
+          {% else %}
+            <span class="badge inactive">Désactivé</span>
+          {% endif %}
+        </td>
+        <td style="color:var(--muted);font-size:12px">
+          {{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}
+        </td>
+        <td style="color:var(--muted);font-size:12px">
+          {{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else 'Jamais' }}
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            {% if u.id != current_user.id %}
+            <!-- Toggle actif/inactif -->
+            <form method="POST" action="{{ url_for('auth.toggle_user', user_id=u.id) }}"
+                  style="display:inline">
+              <button type="submit" class="btn {{ 'btn-red' if u.active else 'btn-blue' }}"
+                onclick="return confirm('Confirmer ?')">
+                {{ 'Désactiver' if u.active else 'Activer' }}
+              </button>
+            </form>
+            <!-- Changer rôle -->
+            <form method="POST" action="{{ url_for('auth.change_role', user_id=u.id) }}"
+                  style="display:inline;display:flex;gap:4px">
+              <select name="role" style="font-size:11px;padding:5px 7px">
+                {% for r in roles %}
+                  <option value="{{ r }}" {% if r == u.role %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-grey">Appliquer</button>
+            </form>
+            {% else %}
+            <span style="color:var(--muted);font-size:12px">(votre compte)</span>
+            {% endif %}
+            <!-- Reset MDP (tous comptes sauf le sien pour confirmation) -->
+            <form method="POST"
+                  action="{{ url_for('auth.reset_password', user_id=u.id) }}"
+                  style="display:inline;display:flex;gap:4px">
+              <input type="password" name="new_password" placeholder="Nouveau MDP"
+                     minlength="12" style="width:130px;font-size:11px">
+              <button type="submit" class="btn btn-grey"
+                      onclick="return confirm('Réinitialiser le mot de passe ?')">
+                Reset MDP
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+</body>
+</html>
