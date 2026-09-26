@@ -31,13 +31,16 @@ class Config:
 
     # Activation collectors
     ENABLED_COLLECTORS: dict[str, bool] = {
-        "dns":     _bool("ENABLE_DNS",     "true"),
-        "http":    _bool("ENABLE_HTTP",    "true"),
-        "whois":   _bool("ENABLE_WHOIS",   "true"),
-        "urlscan": _bool("ENABLE_URLSCAN", "false"),
-        "shodan":  _bool("ENABLE_SHODAN",  "false"),
-        "censys":  _bool("ENABLE_CENSYS",  "false"),
-        "cve":     _bool("ENABLE_CVE",     "true"),
+        "dns":       _bool("ENABLE_DNS",       "true"),
+        "http":      _bool("ENABLE_HTTP",      "true"),
+        "whois":     _bool("ENABLE_WHOIS",     "true"),
+        "urlscan":   _bool("ENABLE_URLSCAN",   "false"),
+        "shodan":    _bool("ENABLE_SHODAN",    "false"),
+        "censys":    _bool("ENABLE_CENSYS",    "false"),
+        "cve":       _bool("ENABLE_CVE",       "true"),
+        "crtsh":     _bool("ENABLE_CRTSH",     "true"),
+        "wordpress": _bool("ENABLE_WORDPRESS", "true"),
+        "backup":    _bool("ENABLE_BACKUP",    "true"),
     }
 
     HTTP_TIMEOUT = 10

@@ -12,15 +12,21 @@ from collectors.urlscan_collector import UrlscanCollector
 from collectors.shodan_collector import ShodanCollector
 from collectors.censys_collector import CensysCollector
 from collectors.cve_collector import CVECollector
+from collectors.crtsh_collector import CrtshCollector
+from collectors.wordpress_collector import WordpressCollector
+from collectors.backup_collector import BackupCollector
 
 _REGISTRY: dict[str, type] = {
-    "dns":     DNSCollector,
-    "http":    HTTPCollector,
-    "whois":   WhoisCollector,
-    "urlscan": UrlscanCollector,
-    "shodan":  ShodanCollector,
-    "censys":  CensysCollector,
-    "cve":     CVECollector,
+    "dns":       DNSCollector,
+    "http":      HTTPCollector,
+    "whois":     WhoisCollector,
+    "urlscan":   UrlscanCollector,
+    "shodan":    ShodanCollector,
+    "censys":    CensysCollector,
+    "cve":       CVECollector,
+    "crtsh":     CrtshCollector,
+    "wordpress": WordpressCollector,
+    "backup":    BackupCollector,
 }
 
 
