@@ -8,7 +8,7 @@ from extensions import limiter, login_manager
 from models import User
 
 
-def create_app() -> Flask:
+def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(
         __name__,
         template_folder="api/templates",
@@ -21,6 +21,10 @@ def create_app() -> Flask:
     app.config["REMEMBER_COOKIE_DURATION"] = 60 * 60 * 24 * 7  # 7 jours
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+    # Overrides de test (appliqués avant les extensions)
+    if test_config:
+        app.config.update(test_config)
 
     # Init extensions
     init_db(app)

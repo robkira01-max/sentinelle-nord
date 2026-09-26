@@ -12,3 +12,4 @@ apscheduler==3.10.4
 cryptography>=42.0.0
 folium>=0.17.0
 werkzeug>=3.0.0
+weasyprint>=60.0

@@ -144,6 +144,27 @@ pre{background:#06080e;border:1px solid var(--border);border-radius:6px;padding:
     <span><span class="dot" id="dot-arctic"></span>Arctic</span>
     <span id="clock" style="color:var(--text)"></span>
   </div>
+  <div style="display:flex;align-items:center;gap:.8rem;font-size:.78rem">
+    <span style="background:rgba(74,158,255,.12);border:1px solid rgba(74,158,255,.3);
+                 border-radius:5px;padding:.2rem .6rem;color:var(--accent2)">
+      👤 {{ current_user.username }}
+      <span style="color:var(--muted);margin-left:.3rem">[{{ current_user.role }}]</span>
+    </span>
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('auth.list_users') }}"
+       style="color:var(--muted);text-decoration:none;padding:.2rem .5rem;
+              border:1px solid var(--border);border-radius:5px;transition:.15s"
+       onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
+      ⚙️ Users
+    </a>
+    {% endif %}
+    <a href="{{ url_for('auth.logout') }}"
+       style="color:var(--muted);text-decoration:none;padding:.2rem .5rem;
+              border:1px solid var(--border);border-radius:5px;transition:.15s"
+       onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">
+      ⏏ Déconnexion
+    </a>
+  </div>
 </div>
 
 <!-- ── Layout ── -->
