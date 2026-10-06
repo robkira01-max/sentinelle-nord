@@ -17,7 +17,9 @@ class Config:
     PORT = int(os.getenv("FLASK_PORT", "5000"))
 
     # DB / cache
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///osint.db")
+    # Convertit postgres:// → postgresql:// (compatibilité Heroku/Railway)
+    _raw_db = os.getenv("DATABASE_URL", "sqlite:///osint.db")
+    DATABASE_URL = _raw_db.replace("postgres://", "postgresql://", 1) if _raw_db.startswith("postgres://") else _raw_db
     CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
 
     # Clés API

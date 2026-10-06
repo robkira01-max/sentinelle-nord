@@ -13,3 +13,6 @@ cryptography>=42.0.0
 folium>=0.17.0
 werkzeug>=3.0.0
 weasyprint>=60.0
+# Production
+psycopg2-binary>=2.9.9
+gunicorn>=22.0.0
