@@ -39,8 +39,10 @@ def create_app(test_config: dict | None = None) -> Flask:
     # Blueprints
     from api.routes import bp as api_bp
     from auth.routes import auth_bp
+    from compliance.routes import compliance_bp
     app.register_blueprint(api_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(compliance_bp)
 
     # Scheduler Arctic (désactivable via SCHEDULER_ENABLED=false)
     if os.getenv("SCHEDULER_ENABLED", "true").lower() not in ("0", "false", "no"):
