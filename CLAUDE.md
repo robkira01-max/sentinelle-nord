@@ -7,7 +7,7 @@ Plateforme interne d'audit OSINT et de surveillance arctique Canada.
 - **Module A** : exposition cyber du Nord canadien (surface d'attaque passive des infrastructures nordiques)
 - **Module B** : conscience du domaine arctique (démonstrateur de fusion de sources ouvertes — **pas** un système opérationnel)
 
-**Statut** : v1.6 — 206 tests · CPCSC Niveau 1 auto-évaluation · Dernière session : P5 (2026-10-06)
+**Statut** : v1.7 — 249 tests · Corrélation d'actifs P6 · Dernière session : P6 (2026-10-06)
 
 ---
 
@@ -231,7 +231,7 @@ Compte admin : voir `.env` (jamais dans ce fichier).
 | 3 | Plafonner le score à 10, ajouter EPSS, documenter la méthode | ✅ 2026-10-04 — EPSS dans `Finding`, multiplicateurs ×1.2/×1.5, enrichissement FIRST.org dans `cve_collector`, cap confirmé `min(s,10)` |
 | 4 | PostgreSQL + Docker + gunicorn (requis avant MDN) | ✅ 2026-10-05 — Dockerfile, docker-compose.yml, gunicorn.conf.py, wsgi.py, 174/174 tests |
 | 5 | CPCSC niveau 1 auto-évaluation | ✅ 2026-10-06 — 17 contrôles, score ≈70%, /compliance/cpcsc, 206/206 tests |
-| 6 | Corrélation d'actifs par organisation (domaines, certificats, ASN) | Non démarré |
+| 6 | Corrélation d'actifs par organisation (domaines, certificats, ASN) | ✅ 2026-10-06 — union-find 5 signaux (ASN/WHOIS/NS/SSL/IP), /correlate + /api/correlate, 249/249 tests |
 | 7 | Valider sources arctiques (licences, couverture réelle) | Non démarré |
 | 8 | STIX/TAXII, export SIEM, rapports FR/EN | ✅ 2026-10-04 — `build_html(lang="fr"|"en")`, `_LABELS` dict, `--lang` CLI, 5 tests bilingues |
 
